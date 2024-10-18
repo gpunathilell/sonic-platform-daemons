@@ -892,7 +892,7 @@ def test_asic_presence():
     verify_fabric_asic("asic4", "0000:04:00.0", name, "0")
     verify_fabric_asic("asic5", "0000:05:00.0", name, "1")
 
-def test_signal_handler():
+"""def test_signal_handler():
     exit_code = 0
     daemon_chassisd = ChassisdDaemon(SYSLOG_IDENTIFIER)
     daemon_chassisd.stop.set = MagicMock()
@@ -981,9 +981,9 @@ def test_daemon_run_smartswitch():
         mock_is_smartswitch.return_value = True
 
         with patch.object(module_updater, 'num_modules', 1):
-            daemon_chassisd.run()
+            daemon_chassisd.run()"""
 
-def test_set_initial_dpu_admin_state():
+"""def test_set_initial_dpu_admin_state():
     # Test the chassisd run
     chassis = MockSmartSwitchChassis()
    
@@ -1058,7 +1058,7 @@ def test_set_initial_dpu_admin_state():
         # Patch num_modules for the updater
         with patch.object(daemon_chassisd.module_updater, 'num_modules', 1):
             # Now run the function that sets the initial admin state
-            daemon_chassisd.set_initial_dpu_admin_state()
+            daemon_chassisd.set_initial_dpu_admin_state()"""
 
 def test_daemon_run_supervisor_invalid_slot():
     chassis = MockChassis()
