@@ -476,13 +476,22 @@ def test_smartswitch_configupdater_check_admin_state():
     chassis.module_list.append(module)
 
     config_updater = SmartSwitchModuleConfigUpdater(SYSLOG_IDENTIFIER, chassis)
+    
+    # Test setting admin state to down
     admin_state = 0
-    config_updater.module_config_update(name, admin_state)
-    assert module.get_admin_state() == admin_state
-
+    with patch.object(module, 'handle_pci_removal') as mock_handle_pci_removal, \
+         patch.object(module, 'set_admin_state') as mock_set_admin_state:
+        config_updater.module_config_update(name, admin_state)
+        mock_handle_pci_removal.assert_called_once()
+        mock_set_admin_state.assert_called_once_with(admin_state)
+    
+    # Test setting admin state to up
     admin_state = 1
-    config_updater.module_config_update(name, admin_state)
-    assert module.get_admin_state() == admin_state
+    with patch.object(module, 'set_admin_state') as mock_set_admin_state, \
+         patch.object(module, 'handle_pci_reattach') as mock_handle_pci_reattach:
+        config_updater.module_config_update(name, admin_state)
+        mock_set_admin_state.assert_called_once_with(admin_state)
+        mock_handle_pci_reattach.assert_called_once()
 
 
     @patch("your_module.glob.glob")
