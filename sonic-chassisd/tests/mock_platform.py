@@ -67,6 +67,12 @@ class MockModule(MockDevice):
             self.midplane_ip = '192.168.1.100'
         else:
             self.midplane_ip = '192.168.1.{}'.format(self.get_slot())
+    
+    def handle_pci_removal(self):
+        pass
+
+    def handle_pci_reattach(self):
+        pass
 
     def is_midplane_reachable(self):
         return self.midplane_access
