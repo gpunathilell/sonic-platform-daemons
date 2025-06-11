@@ -1838,3 +1838,46 @@ def test_smartswitch_moduleupdater_midplane_state_change():
                 return False
 
         assert is_valid_date(chassis_state_db[key]["dpu_midplane_link_time"])
+
+def test_submit_dpu_callback():
+    """Test that submit_dpu_callback calls the right functions in the correct order"""
+    chassis = MockSmartSwitchChassis()
+
+    # Set initial state
+    status = ModuleBase.MODULE_STATUS_PRESENT
+    module.set_oper_status(status)
+    chassis.module_list.append(module)
+
+    # Create module updater and daemon
+    module_updater = SmartSwitchModuleUpdater(SYSLOG_IDENTIFIER, chassis)
+    daemon_chassisd = ChassisdDaemon(SYSLOG_IDENTIFIER, chassis)
+    daemon_chassisd.module_updater = module_updater
+
+    # Test MODULE_ADMIN_DOWN scenario
+    with patch.object(module, 'module_pre_shutdown') as mock_pre_shutdown, \
+         patch.object(module, 'set_admin_state') as mock_set_admin_state, \
+         patch.object(module, 'module_post_startup') as mock_post_startup:
+        daemon_chassisd.submit_dpu_callback(index, MODULE_ADMIN_DOWN)
+        # Verify correct functions are called for admin down
+        mock_pre_shutdown.assert_called_once()
+        mock_set_admin_state.assert_called_once_with(MODULE_ADMIN_DOWN)
+        mock_post_startup.assert_not_called()
+        # Verify call order: pre_shutdown should be called before set_admin_state
+        calls = [call[0][0] for call in [mock_pre_shutdown.call_args, mock_set_admin_state.call_args]]
+        assert len(calls) == 2
+
+    # Reset mocks for next test
+    with patch.object(module, 'module_pre_shutdown') as mock_pre_shutdown, \
+         patch.object(module, 'set_admin_state') as mock_set_admin_state, \
+         patch.object(module, 'module_post_startup') as mock_post_startup:
+
+        daemon_chassisd.submit_dpu_callback(index, MODULE_ADMIN_UP)
+
+        # Verify correct functions are called for admin up
+        mock_pre_shutdown.assert_not_called()
+        mock_set_admin_state.assert_called_once_with(MODULE_ADMIN_UP)
+        mock_post_startup.assert_called_once()
+
+        # Verify call order: set_admin_state should be called before post_startup
+        calls = [call[0][0] for call in [mock_set_admin_state.call_args, mock_post_startup.call_args]]
+        assert len(calls) == 2
