@@ -1843,6 +1843,15 @@ def test_submit_dpu_callback():
     """Test that submit_dpu_callback calls the right functions in the correct order"""
     chassis = MockSmartSwitchChassis()
 
+    # DPU0 details
+    index = 0
+    name = "DPU0"
+    desc = "DPU Module 0"
+    slot = 0
+    serial = "DPU0-0000"
+    module_type = ModuleBase.MODULE_TYPE_DPU
+    module = MockModule(index, name, desc, module_type, slot, serial)
+
     # Set initial state
     status = ModuleBase.MODULE_STATUS_PRESENT
     module.set_oper_status(status)
@@ -1875,4 +1884,3 @@ def test_submit_dpu_callback():
         mock_pre_shutdown.assert_not_called()
         mock_set_admin_state.assert_called_once_with(MODULE_ADMIN_UP)
         mock_post_startup.assert_called_once()
-
