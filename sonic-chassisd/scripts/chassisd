@@ -359,7 +359,7 @@ class ModuleUpdater(logger.Logger):
         fvs = self.module_table.get(key)
         if isinstance(fvs, list) and fvs[0] is True:
             fvs = dict(fvs[-1])
-            return fvs[CHASSIS_MODULE_INFO_OPERSTATUS_FIELD]
+            return fvs.get(CHASSIS_MODULE_INFO_OPERSTATUS_FIELD, ModuleBase.MODULE_STATUS_EMPTY)
         return ModuleBase.MODULE_STATUS_EMPTY
 
     def get_module_admin_status(self, chassis_module_name):
@@ -1371,6 +1371,10 @@ class ChassisdDaemon(daemon_base.DaemonBase):
     def submit_dpu_callback(self, module_index, admin_state, module_name):
         # Set admin_state change in progress using the centralized method
         self.set_transition_flag(self.module_updater.module_table, module_name)
+        if admin_state == MODULE_ADMIN_DOWN:
+            # This is only valid on platforms which have pci_detach and sensord changes required. If it is not implemented,
+            # there are no actions taken during this function execution.
+            try_get(self.module_updater.chassis.get_module(module_index).module_pre_shutdown, default=False)
         try_get(self.module_updater.chassis.get_module(module_index).set_admin_state, admin_state, default=False)
         if admin_state == MODULE_ADMIN_UP:
             # This is only valid on platforms which have pci_rescan sensord changes required. If it is not implemented,
