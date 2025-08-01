@@ -13,16 +13,15 @@ class Table:
         pass
 
     def set(self, key, fvs):
-        if isinstance(fvs, list):
-            self.mock_dict[key] = dict(fvs)
-        elif hasattr(fvs, 'fv_dict'):
-            self.mock_dict[key] = fvs.fv_dict
-        else:
-            raise ValueError("Unsupported format for field-value pairs.")
+        self.mock_dict[key] = fvs.fv_dict
+        pass
 
     def get(self, key):
         if key in self.mock_dict:
-            return [True, tuple(self.mock_dict[key].items())]
+            rv = []
+            rv.append(True)
+            rv.append(tuple(self.mock_dict[key].items()))
+            return rv
         return None
 
     def hget(self, key, field):
