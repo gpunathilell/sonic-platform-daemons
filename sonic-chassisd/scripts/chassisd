@@ -101,6 +101,7 @@ INVALID_IP = '0.0.0.0'
 CHASSIS_MODULE_ADMIN_STATUS = 'admin_status'
 MODULE_ADMIN_DOWN = 0
 MODULE_ADMIN_UP = 1
+MODULE_ADMIN_PRE_SHUTDOWN = 2
 MODULE_REBOOT_CAUSE_DIR = "/host/reboot-cause/module/"
 MAX_HISTORY_FILES = 10
 
@@ -1381,18 +1382,12 @@ class ChassisdDaemon(daemon_base.DaemonBase):
         module_table.set(key, list(fvs_dict.items()))
 
     def submit_dpu_callback(self, module_index, admin_state, module_name):
+        # module_pre_shutdown to be called if submit_dpu_callback is called, which is the case if we power down the DPU
+        # or if DPU is powered off on startup (Since we need to remove the PCIE entries and sensor info)
+        try_get(self.module_updater.chassis.get_module(module_index).module_pre_shutdown, default=False)
         if admin_state == MODULE_ADMIN_DOWN:
-            # This is only valid on platforms which have pci_detach and sensord changes required. If it is not implemented,
-            # there are no actions taken during this function execution.
-            try_get(self.module_updater.chassis.get_module(module_index).module_pre_shutdown, default=False)
-        # Set admin_state change in progress using the centralized method
-        self.set_transition_flag(self.module_updater.module_table, module_name)
-        try_get(self.module_updater.chassis.get_module(module_index).set_admin_state, admin_state, default=False)
-        if admin_state == MODULE_ADMIN_UP:
-            # This is only valid on platforms which have pci_rescan sensord changes required. If it is not implemented,
-            # there are no actions taken during this function execution.
-            try_get(self.module_updater.chassis.get_module(module_index).module_post_startup, default=False)
-        pass
+            self.set_transition_flag(self.module_updater.module_table, module_name)
+            try_get(self.module_updater.chassis.get_module(module_index).set_admin_state, admin_state, default=False)
 
     def set_initial_dpu_admin_state(self):
         """Send admin_state trigger once to modules those are powered up"""
@@ -1406,9 +1401,11 @@ class ChassisdDaemon(daemon_base.DaemonBase):
             try:
                 # Get admin state of DPU
                 admin_state = self.module_updater.get_module_admin_status(module_name)
-                if admin_state == ModuleBase.MODULE_STATUS_EMPTY and operational_state != ModuleBase.MODULE_STATUS_OFFLINE:
-                    # shutdown DPU
-                    op = MODULE_ADMIN_DOWN
+                if admin_state == ModuleBase.MODULE_STATUS_EMPTY:
+                    op = MODULE_ADMIN_PRE_SHUTDOWN
+                    if operational_state != ModuleBase.MODULE_STATUS_OFFLINE:
+                        # shutdown DPU
+                        op = MODULE_ADMIN_DOWN
 
                 # Initialize DPU_STATE DB table on bootup
                 dpu_state_key = "DPU_STATE|" + module_name
@@ -1607,3 +1604,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
